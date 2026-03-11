@@ -75,7 +75,7 @@ jobs:
           mv "mediawiki-${{ matrix.entry.mw }}" mediawiki
           cd mediawiki
           wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" -nv || \
-            wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template" -nv -O phpunit.xml.dist
+            wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template" -nv
           composer install --no-ansi --no-interaction --no-progress
           php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
 
