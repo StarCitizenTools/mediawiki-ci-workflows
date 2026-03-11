@@ -19,6 +19,10 @@ on:
         description: "PHP version for Phan analysis"
         type: string
         default: "8.2"
+      extra-extensions:
+        description: "Space-separated list of extra extensions to download for type resolution (e.g. 'Scribunto')"
+        type: string
+        default: ""
       skip-cache:
         description: "Skip MW cache (set true for nightly runs)"
         type: boolean
@@ -71,6 +75,17 @@ jobs:
       - uses: actions/checkout@v6
         with:
           path: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+
+      - name: Download extra extensions
+        if: inputs.extra-extensions != ''
+        run: |
+          for ext in ${{ inputs.extra-extensions }}; do
+            echo "Downloading $ext..."
+            wget "https://github.com/wikimedia/mediawiki-extensions-${ext}/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv -O "${ext}.tar.gz"
+            tar -zxf "${ext}.tar.gz"
+            mv "mediawiki-extensions-${ext}-${{ inputs.mw-branch }}" "extensions/${ext}"
+            rm "${ext}.tar.gz"
+          done
 
       - name: Install project dependencies
         working-directory: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
