@@ -11,6 +11,10 @@ on:
         description: "Whether PHP coverage is available"
         type: boolean
         default: false
+      enabled:
+        description: "Whether SonarQube scanning is enabled (set false if no SONAR_TOKEN)"
+        type: boolean
+        default: true
     secrets:
       SONAR_TOKEN:
         required: false
@@ -18,32 +22,29 @@ on:
 jobs:
   scan:
     name: 📊 SonarQube
+    if: inputs.enabled
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v6
-        if: env.SONAR_TOKEN != ''
         with:
           fetch-depth: 0
 
       - name: Restore JS coverage
-        if: env.SONAR_TOKEN != '' && inputs.has-js-coverage
+        if: inputs.has-js-coverage
         uses: actions/cache/restore@v5
         with:
           path: coverage/js/lcov.info
           key: coverage-js-${{ github.ref_name }}
 
       - name: Restore PHP coverage
-        if: env.SONAR_TOKEN != '' && inputs.has-php-coverage
+        if: inputs.has-php-coverage
         uses: actions/cache/restore@v5
         with:
           path: coverage/php/coverage.xml
           key: coverage-php-${{ github.ref_name }}
 
       - name: Scan with SonarQube
-        if: env.SONAR_TOKEN != ''
         uses: sonarsource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
