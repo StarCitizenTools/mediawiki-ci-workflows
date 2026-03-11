@@ -4,25 +4,25 @@ Reusable GitHub Actions CI workflows for MediaWiki skins and extensions.
 
 ## Prerequisites
 
-Your project must follow MediaWiki's standard tooling conventions:
+Your project needs:
 
-- **PHP**: `composer.json` with `test` script (PHPCS), `phan` script, and PHPUnit configured
-- **JS**: `package.json` with `lint:js`, `lint:styles`, `lint:i18n`, `lint:md` scripts and Vitest for testing
+- **PHP**: `composer.json` with `test` (PHPCS), `phan`, and PHPUnit scripts
+- **JS**: `package.json` with `lint:js`, `lint:styles`, `lint:i18n`, `lint:md` scripts and Vitest
 - **Coverage**: Vitest outputs to `coverage/js/lcov.info`; PHPUnit outputs Clover XML
 
 ## Secrets
 
-| Secret | Required | Used by | How to get it |
-|--------|----------|---------|---------------|
+| Secret | Required | Used by | Setup |
+|--------|----------|---------|-------|
 | `SONAR_TOKEN` | No | `sonarqube.yml` | [SonarCloud](https://sonarcloud.io) > Your project > Administration > Analysis Method |
 
-No other secrets are needed. All workflows use only public GitHub Actions and public MediaWiki archives.
+All workflows use public GitHub Actions and public MediaWiki archives — no other secrets are needed.
 
 ## Workflows
 
-### `lint.yml` — Code linting
+### `lint.yml` — Linting
 
-Runs PHP, JS, style, i18n, and markdown linters. Each linter is toggled independently.
+Runs PHP, JS, style, i18n, and markdown linters, each toggled independently.
 
 **Inputs:**
 
@@ -33,8 +33,6 @@ Runs PHP, JS, style, i18n, and markdown linters. Each linter is toggled independ
 | `lint-styles` | boolean | `false` | Run `npm run lint:styles` |
 | `lint-i18n` | boolean | `false` | Run `npm run lint:i18n` |
 | `lint-md` | boolean | `false` | Run `npm run lint:md` |
-
-**Example:**
 
 ```yaml
 lint:
@@ -51,7 +49,7 @@ lint:
 
 ### `analyze-php.yml` — Phan static analysis
 
-Runs Phan against a MediaWiki installation. Downloads the specified MW branch, installs your project into it, and runs `composer phan`.
+Downloads a MediaWiki branch, installs your project into it, and runs `composer phan`.
 
 **Inputs:**
 
@@ -59,11 +57,9 @@ Runs Phan against a MediaWiki installation. Downloads the specified MW branch, i
 |-------|------|---------|-------------|
 | `project-type` | string | *required* | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
-| `mw-branch` | string | `REL1_43` | MediaWiki branch for analysis |
+| `mw-branch` | string | `REL1_43` | MediaWiki branch |
 | `php-version` | string | `8.2` | PHP version |
-| `skip-cache` | boolean | `false` | Skip MW cache (use for nightly runs) |
-
-**Example:**
+| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 
 ```yaml
 analyze-php:
@@ -77,11 +73,9 @@ analyze-php:
 
 ### `test-js.yml` — JavaScript tests
 
-Runs `npx vitest run --coverage` and saves coverage to a branch-scoped cache for SonarQube.
+Runs Vitest with coverage and caches the results for SonarQube.
 
 **Inputs:** None.
-
-**Example:**
 
 ```yaml
 test-js:
@@ -92,7 +86,7 @@ test-js:
 
 ### `test-php.yml` — PHPUnit tests
 
-Runs PHPUnit against a matrix of MediaWiki branches and PHP versions. One matrix entry can enable Xdebug coverage, which is saved to a branch-scoped cache for SonarQube.
+Runs PHPUnit across a matrix of MediaWiki branches and PHP versions. Set `coverage: "xdebug"` on a matrix entry to generate coverage for SonarQube.
 
 **Inputs:**
 
@@ -101,7 +95,7 @@ Runs PHPUnit against a matrix of MediaWiki branches and PHP versions. One matrix
 | `project-type` | string | *required* | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
-| `skip-cache` | boolean | `false` | Skip MW cache (use for nightly runs) |
+| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 
 **Default matrix:**
 
@@ -114,16 +108,12 @@ Runs PHPUnit against a matrix of MediaWiki branches and PHP versions. One matrix
 ]
 ```
 
-Each entry has:
-
 | Field | Description |
 |-------|-------------|
 | `mw` | MediaWiki branch (`REL1_43`, `REL1_44`, `REL1_45`, `master`) |
 | `php` | PHP version |
 | `coverage` | `xdebug` to generate coverage, `none` to skip |
-| `experimental` | `true` to allow failure without failing the workflow |
-
-**Example:**
+| `experimental` | `true` allows failure without failing the workflow |
 
 ```yaml
 test-php:
@@ -133,7 +123,7 @@ test-php:
     project-name: Citizen
 ```
 
-To override the matrix (e.g. drop master or change coverage):
+To customize the matrix:
 
 ```yaml
 test-php:
@@ -150,9 +140,9 @@ test-php:
 
 ---
 
-### `sonarqube.yml` — SonarQube / SonarCloud analysis
+### `sonarqube.yml` — SonarQube analysis
 
-Restores cached coverage from `test-js` and `test-php`, then runs the SonarQube scan. Coverage is branch-scoped — if only JS or only PHP tests ran, stale coverage from the other is restored from cache so SonarQube always has the most recent data for both.
+Runs a SonarQube scan with coverage data from `test-js` and `test-php`. Coverage is cached per branch, so SonarQube always has data for both JS and PHP even when only one test suite ran.
 
 **Inputs:**
 
@@ -168,8 +158,6 @@ Restores cached coverage from `test-js` and `test-php`, then runs the SonarQube 
 |--------|----------|-------------|
 | `SONAR_TOKEN` | No | SonarCloud/SonarQube authentication token |
 
-**Example:**
-
 ```yaml
 sonarqube:
   needs: [test-js, test-php]
@@ -182,7 +170,7 @@ sonarqube:
     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
-Your project also needs a `sonar-project.properties` file in the repo root. See [SonarCloud docs](https://docs.sonarsource.com/sonarcloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/).
+Your project also needs a `sonar-project.properties` file. See [SonarCloud docs](https://docs.sonarsource.com/sonarcloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/).
 
 ## Full example
 
@@ -200,7 +188,7 @@ on:
     branches: ["**"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -305,8 +293,11 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
-## Caching strategy
+## Caching
 
-- **MediaWiki installation** is cached per branch+PHP version (`mw-REL1_43-php8.2`). Nightly runs skip cache to pick up upstream changes — pass `skip-cache: true`.
-- **Composer cache** is cached per PHP version (`composer-php8.2`), shared across MW branches.
-- **Coverage data** is cached per branch (`coverage-js-main`, `coverage-php-main`). This ensures SonarQube always has coverage even when only one test suite runs.
+| What | Cache key | Shared across | Refreshed by |
+|------|-----------|---------------|--------------|
+| MediaWiki installation | `mw-<branch>-php<version>` | `test-php` and `analyze-php` | `skip-cache: true` (nightly) |
+| Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
+| JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
+| PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
