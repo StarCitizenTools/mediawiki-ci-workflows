@@ -59,6 +59,7 @@ Downloads a MediaWiki branch, installs your project into it, and runs `composer 
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `mw-branch` | string | `REL1_43` | MediaWiki branch |
 | `php-version` | string | `8.2` | PHP version |
+| `extra-extensions` | string | `""` | Space-separated extra extensions for type resolution (e.g. `Scribunto`) |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 
 ```yaml
