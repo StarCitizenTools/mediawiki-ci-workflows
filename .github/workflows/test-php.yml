@@ -1,0 +1,124 @@
+name: "\U0001F9EA Test PHP"
+
+on:
+  workflow_call:
+    inputs:
+      project-type:
+        description: "'skin' or 'extension'"
+        type: string
+        required: true
+      project-name:
+        description: "e.g. Citizen, TabberNeue"
+        type: string
+        required: true
+      matrix:
+        description: >
+          JSON array of matrix entries. Each entry: {"mw": "REL1_43", "php": "8.2", "coverage": "none"|"xdebug", "experimental": false}.
+        type: string
+        default: >
+          [
+            {"mw": "REL1_43", "php": "8.2", "coverage": "xdebug", "experimental": false},
+            {"mw": "REL1_44", "php": "8.3", "coverage": "none", "experimental": false},
+            {"mw": "REL1_45", "php": "8.4", "coverage": "none", "experimental": false},
+            {"mw": "master", "php": "8.5", "coverage": "none", "experimental": true}
+          ]
+      skip-cache:
+        description: "Skip MW cache (set true for nightly runs to refresh cache)"
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    name: "\U0001F9EA Test PHP (MW ${{ matrix.entry.mw }}, PHP ${{ matrix.entry.php }})"
+    continue-on-error: ${{ matrix.entry.experimental }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        entry: ${{ fromJSON(inputs.matrix) }}
+
+    defaults:
+      run:
+        working-directory: mediawiki
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.entry.php }}
+          coverage: ${{ matrix.entry.coverage }}
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Cache MediaWiki
+        if: ${{ !inputs.skip-cache }}
+        id: cache-mediawiki
+        uses: actions/cache@v5
+        with:
+          path: mediawiki
+          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}
+
+      - name: Cache Composer cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ matrix.entry.php }}
+
+      - name: Download MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        working-directory: ~
+        run: |
+          rm -rf mediawiki
+          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ matrix.entry.mw }}.tar.gz" -nv
+          tar -zxf "${{ matrix.entry.mw }}.tar.gz"
+          mv "mediawiki-${{ matrix.entry.mw }}" mediawiki
+          cd mediawiki
+          wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" -nv
+          composer install --no-ansi --no-interaction --no-progress
+          php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
+
+      - name: Configure MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        run: |
+          LOAD_FN=${{ inputs.project-type == 'skin' && 'wfLoadSkin' || 'wfLoadExtension' }}
+          cat <<EOT >> LocalSettings.php
+          error_reporting(E_ALL| E_STRICT);
+          ini_set("display_errors", "1");
+          \$wgShowExceptionDetails = true;
+          \$wgShowDBErrorBacktrace = true;
+          \$wgDevelopmentWarnings = true;
+          $LOAD_FN( "${{ inputs.project-name }}" );
+          EOT
+
+      - uses: actions/checkout@v6
+        with:
+          path: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: composer update --no-ansi --no-interaction --no-progress
+
+      - name: Run PHPUnit
+        if: matrix.entry.coverage == 'none'
+        run: composer phpunit:entrypoint -- ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+
+      - name: Run PHPUnit with coverage
+        if: matrix.entry.coverage == 'xdebug'
+        run: |
+          composer phpunit:coverage-edit -- ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+          XDEBUG_MODE=coverage composer phpunit -- --testsuite ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }} --coverage-clover ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/coverage/php/coverage.xml ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/tests/phpunit --exclude-group Stub
+
+      - name: Normalize and save PHP coverage
+        if: matrix.entry.coverage == 'xdebug'
+        working-directory: ~
+        run: |
+          mkdir -p coverage/php
+          cp "mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/coverage/php/coverage.xml" coverage/php/coverage.xml
+
+      - name: Save PHP coverage to cache
+        if: matrix.entry.coverage == 'xdebug'
+        uses: actions/cache/save@v5
+        with:
+          path: coverage/php/coverage.xml
+          key: coverage-php-${{ github.ref_name }}
