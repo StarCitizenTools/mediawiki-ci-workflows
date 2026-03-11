@@ -82,6 +82,7 @@ jobs:
           for ext in ${{ inputs.extra-extensions }}; do
             echo "Downloading $ext..."
             wget "https://github.com/wikimedia/mediawiki-extensions-${ext}/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv -O "${ext}.tar.gz"
+            rm -rf "extensions/${ext}"
             tar -zxf "${ext}.tar.gz"
             mv "mediawiki-extensions-${ext}-${{ inputs.mw-branch }}" "extensions/${ext}"
             rm "${ext}.tar.gz"
