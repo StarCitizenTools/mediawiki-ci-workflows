@@ -1,4 +1,4 @@
-name: "\U0001F9EA Test PHP"
+name: 🧪 Test PHP
 
 on:
   workflow_call:

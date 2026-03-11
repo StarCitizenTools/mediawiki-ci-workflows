@@ -1,4 +1,4 @@
-name: "\U0001F4CA SonarQube"
+name: 📊 SonarQube
 
 on:
   workflow_call:
@@ -17,7 +17,7 @@ on:
 
 jobs:
   scan:
-    name: "\U0001F4CA SonarQube"
+    name: 📊 SonarQube
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:

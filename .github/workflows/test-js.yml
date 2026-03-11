@@ -1,11 +1,11 @@
-name: "\U0001F9EA Test JS"
+name: 🧪 Test JS
 
 on:
   workflow_call:
 
 jobs:
   test:
-    name: "\U0001F9EA Test JS"
+    name: 🧪 Test JS
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
