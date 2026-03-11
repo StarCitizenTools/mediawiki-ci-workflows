@@ -1,0 +1,81 @@
+name: "\U0001F52C Analyze PHP"
+
+on:
+  workflow_call:
+    inputs:
+      project-type:
+        description: "'skin' or 'extension'"
+        type: string
+        required: true
+      project-name:
+        description: "e.g. Citizen, TabberNeue"
+        type: string
+        required: true
+      mw-branch:
+        description: "MediaWiki branch for Phan analysis"
+        type: string
+        default: REL1_43
+      php-version:
+        description: "PHP version for Phan analysis"
+        type: string
+        default: "8.2"
+      skip-cache:
+        description: "Skip MW cache (set true for nightly runs)"
+        type: boolean
+        default: false
+
+jobs:
+  analyze:
+    name: "\U0001F52C Analyze PHP"
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mediawiki
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: mbstring, intl, ast
+          tools: composer
+
+      - name: Cache MediaWiki
+        if: ${{ !inputs.skip-cache }}
+        id: cache-mediawiki
+        uses: actions/cache@v5
+        with:
+          path: mediawiki
+          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}
+
+      - name: Cache Composer cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ inputs.php-version }}
+
+      - name: Download MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        working-directory: ~
+        run: |
+          rm -rf mediawiki
+          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv
+          tar -zxf "${{ inputs.mw-branch }}.tar.gz"
+          mv "mediawiki-${{ inputs.mw-branch }}" mediawiki
+
+      - name: Install MediaWiki dependencies
+        run: composer install --no-ansi --no-interaction --no-progress
+
+      - uses: actions/checkout@v6
+        with:
+          path: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+
+      - name: Install project dependencies
+        working-directory: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run Phan
+        working-directory: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+        run: composer phan
