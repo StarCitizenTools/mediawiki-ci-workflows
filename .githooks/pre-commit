@@ -1,0 +1,30 @@
+#!/bin/bash
+# Pre-commit hook: lint all workflow files with actionlint and yamllint.
+# Setup: git config core.hooksPath .githooks
+
+set -e
+
+failed=0
+
+if command -v actionlint &>/dev/null; then
+  echo "Running actionlint..."
+  if ! actionlint; then
+    failed=1
+  fi
+else
+  echo "Warning: actionlint not installed, skipping (install: https://github.com/rhysd/actionlint)"
+fi
+
+if command -v yamllint &>/dev/null; then
+  echo "Running yamllint..."
+  if ! yamllint -c .yamllint.yml .github/workflows/; then
+    failed=1
+  fi
+else
+  echo "Warning: yamllint not installed, skipping (install: pip install yamllint)"
+fi
+
+if [ "$failed" -eq 1 ]; then
+  echo "Pre-commit checks failed."
+  exit 1
+fi
