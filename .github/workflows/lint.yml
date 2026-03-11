@@ -1,0 +1,69 @@
+name: "\U0001FA79 Lint"
+
+on:
+  workflow_call:
+    inputs:
+      lint-php:
+        description: Run PHP linting (composer test)
+        type: boolean
+        default: false
+      lint-js:
+        description: Run JavaScript linting (npm run lint:js)
+        type: boolean
+        default: false
+      lint-styles:
+        description: Run stylesheet linting (npm run lint:styles)
+        type: boolean
+        default: false
+      lint-i18n:
+        description: Run i18n linting (npm run lint:i18n)
+        type: boolean
+        default: false
+      lint-md:
+        description: Run markdown linting (npm run lint:md)
+        type: boolean
+        default: false
+
+jobs:
+  lint:
+    name: "\U0001FA79 Lint"
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md
+        uses: actions/setup-node@v6
+        with:
+          cache: npm
+
+      - name: Install PHP dependencies
+        if: inputs.lint-php
+        run: |
+          composer validate
+          composer install --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md
+        run: npm ci
+
+      - name: Lint PHP
+        if: inputs.lint-php
+        run: composer test
+
+      - name: Lint script
+        if: inputs.lint-js
+        run: npm run lint:js
+
+      - name: Lint stylesheet
+        if: inputs.lint-styles
+        run: npm run lint:styles
+
+      - name: Lint i18n
+        if: inputs.lint-i18n
+        run: npm run lint:i18n
+
+      - name: Lint markdown
+        if: inputs.lint-md
+        run: npm run lint:md
