@@ -21,7 +21,6 @@ on:
 
 jobs:
   scan:
-    name: 📊 SonarQube
     if: inputs.enabled
     timeout-minutes: 10
     runs-on: ubuntu-latest
