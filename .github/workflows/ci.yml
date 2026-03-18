@@ -19,8 +19,8 @@ jobs:
       - name: Run actionlint
         run: ./actionlint
 
-      - name: Install yamllint
-        run: pip install yamllint
+      - name: Install yamlfmt
+        run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 
-      - name: Run yamllint
-        run: yamllint -c .yamllint.yml .github/workflows/
+      - name: Run yamlfmt
+        run: yamlfmt -lint .
