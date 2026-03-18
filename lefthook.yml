@@ -1,0 +1,8 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: actionlint
+      run: actionlint
+
+    - name: yamlfmt
+      run: yamlfmt -lint .

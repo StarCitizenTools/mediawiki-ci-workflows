@@ -4,30 +4,6 @@
 
 Reusable GitHub Actions CI workflows for MediaWiki skins and extensions. See `README.md` for workflow documentation, inputs, examples, and caching strategy.
 
-## Setup
-
-Enable the pre-commit hook:
-
-```sh
-git config core.hooksPath .githooks
-```
-
-Install linters:
-
-- **actionlint**: https://github.com/rhysd/actionlint#install
-- **yamllint**: `pip install yamllint`
-
-## Verification
-
-**Always run linters before committing.** The pre-commit hook runs them automatically, but you can also run them manually:
-
-```sh
-actionlint
-yamllint -c .yamllint.yml .github/workflows/
-```
-
-To verify workflow behavior, push to a branch and trigger a CI run in a caller repo (e.g. Citizen) that references it via `@<branch>`.
-
 ## Conventions
 
 ### Workflow design
