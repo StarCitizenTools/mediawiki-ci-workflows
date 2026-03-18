@@ -1,30 +1,49 @@
 # mediawiki-ci-workflows
 
-Reusable GitHub Actions CI workflows for MediaWiki skins and extensions.
+Reusable GitHub Actions CI workflows for MediaWiki skins and extensions. Call them from your project's workflow file — no need to copy and maintain CI logic yourself.
 
-## Prerequisites
+## Quick start
+
+Add a `.github/workflows/ci.yml` to your project:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/lint.yml@main
+    with:
+      lint-php: true
+      lint-js: true
+
+  test-js:
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/test-js.yml@main
+
+  test-php:
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/test-php.yml@main
+    with:
+      project-type: skin       # or 'extension'
+      project-name: MySkin     # your project's directory name
+```
 
 Your project needs:
 
 - **PHP**: `composer.json` with `test` (PHPCS), `phan`, and PHPUnit scripts
-- **JS**: `package.json` with `lint:js`, `lint:styles`, `lint:i18n`, `lint:md` scripts and Vitest
-- **Coverage**: Vitest outputs to `coverage/js/lcov.info`; PHPUnit outputs Clover XML
+- **JS**: `package.json` with `lint:js`, `lint:styles`, `lint:i18n`, `lint:md` scripts and [Vitest](https://vitest.dev/)
+- **Coverage** (optional): Vitest outputs to `coverage/js/lcov.info`; PHPUnit outputs Clover XML
 
-## Secrets
-
-| Secret | Required | Used by | Setup |
-|--------|----------|---------|-------|
-| `SONAR_TOKEN` | No | `sonarqube.yml` | [SonarCloud](https://sonarcloud.io) > Your project > Administration > Analysis Method |
-
-All workflows use public GitHub Actions and public MediaWiki archives — no other secrets are needed.
+Not every project needs all of these — only include the workflows and inputs relevant to your stack.
 
 ## Workflows
 
 ### `lint.yml` — Linting
 
-Runs PHP, JS, style, i18n, and markdown linters, each toggled independently.
-
-**Inputs:**
+Runs PHP, JS, style, i18n, and markdown linters. Enable only the ones you need.
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -51,8 +70,6 @@ lint:
 
 Downloads a MediaWiki branch, installs your project into it, and runs `composer phan`.
 
-**Inputs:**
-
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
 | `project-type` | string | *required* | `skin` or `extension` |
@@ -76,7 +93,7 @@ analyze-php:
 
 Runs Vitest with coverage and caches the results for SonarQube.
 
-**Inputs:** None.
+No inputs required.
 
 ```yaml
 test-js:
@@ -87,9 +104,7 @@ test-js:
 
 ### `test-php.yml` — PHPUnit tests
 
-Runs PHPUnit across a matrix of MediaWiki branches and PHP versions. Set `coverage: "xdebug"` on a matrix entry to generate coverage for SonarQube.
-
-**Inputs:**
+Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -111,7 +126,7 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions. Set `covera
 
 | Field | Description |
 |-------|-------------|
-| `mw` | MediaWiki branch (`REL1_43`, `REL1_44`, `REL1_45`, `master`) |
+| `mw` | MediaWiki branch |
 | `php` | PHP version |
 | `coverage` | `xdebug` to generate coverage, `none` to skip |
 | `experimental` | `true` allows failure without failing the workflow |
@@ -145,19 +160,15 @@ test-php:
 
 Runs a SonarQube scan with coverage data from `test-js` and `test-php`. Coverage is cached per branch, so SonarQube always has data for both JS and PHP even when only one test suite ran.
 
-**Inputs:**
-
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
 | `has-js-coverage` | boolean | `false` | Whether JS coverage was generated this run |
 | `has-php-coverage` | boolean | `false` | Whether PHP coverage was generated this run |
-| `enabled` | boolean | `true` | Set `false` to skip (e.g. if no `SONAR_TOKEN`) |
+| `enabled` | boolean | `true` | Set `false` to skip |
 
-**Secrets:**
+Requires a `SONAR_TOKEN` secret (optional — the scan is skipped automatically if the token is unavailable, e.g. on fork PRs). Set it up at [SonarCloud](https://sonarcloud.io) > Your project > Administration > Analysis Method.
 
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `SONAR_TOKEN` | No | SonarCloud/SonarQube authentication token |
+Your project also needs a `sonar-project.properties` file. See [SonarCloud docs](https://docs.sonarsource.com/sonarcloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/).
 
 ```yaml
 sonarqube:
@@ -171,11 +182,12 @@ sonarqube:
     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
-Your project also needs a `sonar-project.properties` file. See [SonarCloud docs](https://docs.sonarsource.com/sonarcloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/).
-
 ## Full example
 
 A complete caller workflow with change detection, conditional jobs, and nightly cache refresh:
+
+<details>
+<summary>Show full example</summary>
 
 ```yaml
 name: CI
@@ -294,15 +306,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
-## Development
-
-Requires [Go](https://go.dev/). Install all dev tools and enable the pre-commit hook:
-
-```sh
-make setup
-```
-
-This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https://github.com/google/yamlfmt), and [lefthook](https://github.com/evilmartians/lefthook), then configures lefthook to run them automatically before each commit.
+</details>
 
 ## Caching
 
@@ -312,3 +316,13 @@ This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https
 | Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
+
+## Development
+
+Requires [Go](https://go.dev/). Install all dev tools and enable the pre-commit hook:
+
+```sh
+make setup
+```
+
+This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https://github.com/google/yamlfmt), and [lefthook](https://github.com/evilmartians/lefthook), then configures lefthook to run them automatically before each commit.
