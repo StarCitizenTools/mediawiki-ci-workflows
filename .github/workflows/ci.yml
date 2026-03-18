@@ -19,8 +19,5 @@ jobs:
       - name: Run actionlint
         run: ./actionlint
 
-      - name: Install yamlfmt
-        run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-
       - name: Run yamlfmt
-        run: $(go env GOPATH)/bin/yamlfmt -lint .
+        run: go run github.com/google/yamlfmt/cmd/yamlfmt@latest -lint .
