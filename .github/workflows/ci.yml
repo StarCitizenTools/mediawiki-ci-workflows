@@ -13,11 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install actionlint
-        run: bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-
       - name: Run actionlint
-        run: ./actionlint
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@latest
 
       - name: Run yamlfmt
         run: go run github.com/google/yamlfmt/cmd/yamlfmt@latest -lint .
