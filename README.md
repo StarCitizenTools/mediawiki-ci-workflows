@@ -325,10 +325,11 @@ jobs:
 
 ## Development
 
-Requires [Go](https://go.dev/). Install all dev tools and enable the pre-commit hook:
+Requires [mise](https://mise.jdx.dev/). Install dev tools and enable the pre-commit hook:
 
 ```sh
-make setup
+mise install
+mise run setup
 ```
 
 This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https://github.com/google/yamlfmt), and [lefthook](https://github.com/evilmartians/lefthook), then configures lefthook to run them automatically before each commit.
