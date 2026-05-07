@@ -1,7 +1,7 @@
 [tools]
-"go:github.com/google/yamlfmt/cmd/yamlfmt" = "0.21.0"
-"go:github.com/rhysd/actionlint/cmd/actionlint" = "1.7.12"
-"go:github.com/evilmartians/lefthook" = "2.1.6"
+yamlfmt = "0.21.0"
+actionlint = "1.7.12"
+lefthook = "2.1.6"
 
 [tasks.setup]
 description = "Enable the pre-commit hook"
