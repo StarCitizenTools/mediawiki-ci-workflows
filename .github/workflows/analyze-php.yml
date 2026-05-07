@@ -27,12 +27,16 @@ on:
         description: "Skip MW cache (set true for nightly runs)"
         type: boolean
         default: false
+      runner:
+        description: "Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')"
+        type: string
+        default: ubuntu-latest
 
 jobs:
   analyze:
     name: 🔬 Analyze PHP
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
 
     defaults:
       run:

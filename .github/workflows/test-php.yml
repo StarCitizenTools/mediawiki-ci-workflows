@@ -26,13 +26,17 @@ on:
         description: "Skip MW cache (set true for nightly runs to refresh cache)"
         type: boolean
         default: false
+      runner:
+        description: "Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')"
+        type: string
+        default: ubuntu-latest
 
 jobs:
   test:
     name: "MW ${{ matrix.entry.mw }}, PHP ${{ matrix.entry.php }}"
     continue-on-error: ${{ matrix.entry.experimental }}
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
 
     strategy:
       matrix:

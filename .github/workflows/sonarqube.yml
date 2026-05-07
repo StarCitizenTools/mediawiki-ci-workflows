@@ -15,6 +15,10 @@ on:
         description: "Whether SonarQube scanning is enabled (set false if no SONAR_TOKEN)"
         type: boolean
         default: true
+      runner:
+        description: "Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')"
+        type: string
+        default: ubuntu-latest
     secrets:
       SONAR_TOKEN:
         required: false
@@ -24,7 +28,7 @@ jobs:
     name: 📊 SonarQube
     if: inputs.enabled
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v6
         with:

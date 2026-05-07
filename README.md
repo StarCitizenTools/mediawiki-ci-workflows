@@ -52,6 +52,7 @@ Runs PHP, JS, style, i18n, and markdown linters. Enable only the ones you need.
 | `lint-styles` | boolean | `false` | Run `npm run lint:styles` |
 | `lint-i18n` | boolean | `false` | Run `npm run lint:i18n` |
 | `lint-md` | boolean | `false` | Run `npm run lint:md` |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 ```yaml
 lint:
@@ -78,6 +79,7 @@ Downloads a MediaWiki branch, installs your project into it, and runs `composer 
 | `php-version` | string | `8.2` | PHP version |
 | `extra-extensions` | string | `""` | Space-separated extra extensions for type resolution (e.g. `Scribunto`) |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 ```yaml
 analyze-php:
@@ -93,7 +95,9 @@ analyze-php:
 
 Runs Vitest with coverage and caches the results for SonarQube.
 
-No inputs required.
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 ```yaml
 test-js:
@@ -112,6 +116,7 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 **Default matrix:**
 
@@ -165,6 +170,7 @@ Runs a SonarQube scan with coverage data from `test-js` and `test-php`. Coverage
 | `has-js-coverage` | boolean | `false` | Whether JS coverage was generated this run |
 | `has-php-coverage` | boolean | `false` | Whether PHP coverage was generated this run |
 | `enabled` | boolean | `true` | Set `false` to skip |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 Requires a `SONAR_TOKEN` secret (optional — the scan is skipped automatically if the token is unavailable, e.g. on fork PRs). Set it up at [SonarCloud](https://sonarcloud.io) > Your project > Administration > Analysis Method.
 
