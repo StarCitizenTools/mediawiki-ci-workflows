@@ -1,4 +1,4 @@
-name: 🧪 Test PHP
+name: 🧪 Test PHP Parser
 
 on:
   workflow_call:
@@ -13,14 +13,14 @@ on:
         required: true
       matrix:
         description: >
-          JSON array of matrix entries. Each entry: {"mw": "REL1_43", "php": "8.2", "coverage": "none"|"xdebug", "experimental": false}.
+          JSON array of matrix entries. Each entry: {"mw": "REL1_43", "php": "8.2", "experimental": false}.
         type: string
         default: >
           [
-            {"mw": "REL1_43", "php": "8.2", "coverage": "xdebug", "experimental": false},
-            {"mw": "REL1_44", "php": "8.3", "coverage": "none", "experimental": false},
-            {"mw": "REL1_45", "php": "8.4", "coverage": "none", "experimental": false},
-            {"mw": "master", "php": "8.5", "coverage": "none", "experimental": true}
+            {"mw": "REL1_43", "php": "8.2", "experimental": false},
+            {"mw": "REL1_44", "php": "8.3", "experimental": false},
+            {"mw": "REL1_45", "php": "8.4", "experimental": false},
+            {"mw": "master", "php": "8.5", "experimental": true}
           ]
       skip-cache:
         description: "Skip MW cache (set true for nightly runs to refresh cache)"
@@ -51,7 +51,6 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.entry.php }}
-          coverage: ${{ matrix.entry.coverage }}
           extensions: mbstring, intl
           tools: composer
 
@@ -104,26 +103,16 @@ jobs:
       - name: Install dependencies
         run: composer update --no-ansi --no-interaction --no-progress
 
-      - name: Run PHPUnit
-        if: matrix.entry.coverage == 'none'
-        run: composer phpunit:entrypoint -- ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
-
-      - name: Run PHPUnit with coverage
-        if: matrix.entry.coverage == 'xdebug'
-        run: |
-          composer phpunit:coverage-edit -- ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
-          XDEBUG_MODE=coverage composer phpunit -- --testsuite ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }} --coverage-clover ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/coverage/php/coverage.xml ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/tests/phpunit --exclude-group Stub
-
-      - name: Normalize and save PHP coverage
-        if: matrix.entry.coverage == 'xdebug'
-        working-directory: ~
-        run: |
-          mkdir -p coverage/php
-          cp "mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/coverage/php/coverage.xml" coverage/php/coverage.xml
-
-      - name: Save PHP coverage to cache
-        if: matrix.entry.coverage == 'xdebug'
-        uses: actions/cache/save@v5
-        with:
-          path: coverage/php/coverage.xml
-          key: coverage-php-${{ github.ref_name }}
+      - name: Run parser tests
+        run: |-
+          PROJECT_PATH="${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}"
+          PARSER_TEST_DIR="$PROJECT_PATH/tests/parser"
+          if ! ls "$PARSER_TEST_DIR"/*.txt > /dev/null 2>&1; then
+            echo "No parser tests found at $PARSER_TEST_DIR — skipping."
+            exit 0
+          fi
+          for f in "$PARSER_TEST_DIR"/*.txt; do
+            echo "::group::Running parser tests from $f"
+            php tests/parser/parserTests.php --file="$f"
+            echo "::endgroup::"
+          done
