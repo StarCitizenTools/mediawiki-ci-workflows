@@ -161,6 +161,45 @@ test-php:
 
 ---
 
+### `test-parser.yml` — MediaWiki parser tests
+
+Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `tests/parser/` directory across a matrix of MediaWiki branches and PHP versions. The job is a no-op if the directory has no parser tests, so it's safe to wire up unconditionally.
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `project-type` | string | *required* | `skin` or `extension` |
+| `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
+| `matrix` | string | *(see below)* | JSON array of matrix entries |
+| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
+
+**Default matrix:**
+
+```json
+[
+  {"mw": "REL1_43", "php": "8.2", "experimental": false},
+  {"mw": "REL1_44", "php": "8.3", "experimental": false},
+  {"mw": "REL1_45", "php": "8.4", "experimental": false},
+  {"mw": "master",  "php": "8.5", "experimental": true}
+]
+```
+
+| Field | Description |
+|-------|-------------|
+| `mw` | MediaWiki branch |
+| `php` | PHP version |
+| `experimental` | `true` allows failure without failing the workflow |
+
+```yaml
+test-parser:
+  uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/test-parser.yml@main
+  with:
+    project-type: extension
+    project-name: TabberNeue
+```
+
+---
+
 ### `sonarqube.yml` — SonarQube analysis
 
 Runs a SonarQube scan with coverage data from `test-js` and `test-php`. Coverage is cached per branch, so SonarQube always has data for both JS and PHP even when only one test suite ran.
@@ -318,7 +357,7 @@ jobs:
 
 | What | Cache key | Shared across | Refreshed by |
 |------|-----------|---------------|--------------|
-| MediaWiki installation | `mw-<branch>-php<version>` | `test-php` and `analyze-php` | `skip-cache: true` (nightly) |
+| MediaWiki installation | `mw-<branch>-php<version>` | `test-php`, `test-parser`, and `analyze-php` | `skip-cache: true` (nightly) |
 | Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
