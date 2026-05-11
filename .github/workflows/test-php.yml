@@ -114,6 +114,20 @@ jobs:
           composer phpunit:coverage-edit -- ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
           XDEBUG_MODE=coverage composer phpunit -- --testsuite ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }} --coverage-clover ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/coverage/php/coverage.xml ${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}/tests/phpunit --exclude-group Stub
 
+      - name: Run parser tests
+        run: |
+          PROJECT_PATH="${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}"
+          PARSER_TEST_DIR="$PROJECT_PATH/tests/parser"
+          if ! ls "$PARSER_TEST_DIR"/*.txt > /dev/null 2>&1; then
+            echo "No parser tests found at $PARSER_TEST_DIR — skipping."
+            exit 0
+          fi
+          for f in "$PARSER_TEST_DIR"/*.txt; do
+            echo "::group::Running parser tests from $f"
+            php tests/parser/parserTests.php --file="$f"
+            echo "::endgroup::"
+          done
+
       - name: Normalize and save PHP coverage
         if: matrix.entry.coverage == 'xdebug'
         working-directory: ~
