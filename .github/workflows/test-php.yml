@@ -62,12 +62,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: mediawiki
-          # hashFiles invalidates the cache whenever this workflow changes,
-          # which is the simplest way to recover from a poisoned cache.
-          # Without it, a one-off transient failure during the Download
-          # MediaWiki step leaves a broken `mediawiki/` directory in the
-          # cache that every subsequent run silently reuses.
-          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ hashFiles('.github/workflows/test-php.yml') }}
+          # Bump the version suffix when the download/install logic below
+          # changes, so existing caches don't keep a stale MediaWiki tree
+          # alive.
+          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5
