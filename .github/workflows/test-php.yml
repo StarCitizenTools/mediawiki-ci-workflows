@@ -85,13 +85,14 @@ jobs:
           cd mediawiki
           # `phpunit.xml.dist` is `export-ignore`d in MW's .gitattributes, so
           # the GitHub source tarball doesn't include it — fetch it
-          # separately. MW master renamed the file to `phpunit.xml.template`;
-          # try the old name first for the release branches, fall back to the
-          # new name for master. `-O phpunit.xml.dist` forces the output
-          # filename either way, since MW core's
-          # `ComposerPhpunitXmlCoverageEdit` always looks for `.dist`.
-          wget -O phpunit.xml.dist -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" || \
-            wget -O phpunit.xml.dist -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template"
+          # separately. MW master renamed the file to `phpunit.xml.template`,
+          # and the MW-side PHPUnit machinery looks for whichever name that
+          # branch actually ships (REL1_43 reads `.dist`; master's
+          # `tests/phpunit/generatePHPUnitConfig.php` reads `.template`).
+          # Leave wget to save under the URL's basename so the file lands
+          # under the name MW core expects on that branch.
+          wget -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" || \
+            wget -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template"
           composer install --no-ansi --no-interaction --no-progress
           php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
 
