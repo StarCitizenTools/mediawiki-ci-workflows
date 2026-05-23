@@ -23,6 +23,10 @@ on:
             {"mw": "REL1_46", "php": "8.5", "coverage": "none", "experimental": false},
             {"mw": "master", "php": "8.5", "coverage": "none", "experimental": true}
           ]
+      extra-extensions:
+        description: "Space-separated list of extra extensions to download and load (e.g. 'Scribunto')"
+        type: string
+        default: ""
       skip-cache:
         description: "Skip MW cache (set true for nightly runs to refresh cache)"
         type: boolean
@@ -64,8 +68,10 @@ jobs:
           path: mediawiki
           # Bump the version suffix when the download/install logic below
           # changes, so existing caches don't keep a stale MediaWiki tree
-          # alive.
-          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-v2
+          # alive. `extra-extensions` participates in the key so changing
+          # which extensions get loaded reliably invalidates LocalSettings.php
+          # and the cached extensions/ tree.
+          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-v3
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -105,13 +111,28 @@ jobs:
           \$wgShowExceptionDetails = true;
           \$wgShowDBErrorBacktrace = true;
           \$wgDevelopmentWarnings = true;
-          $LOAD_FN( "${{ inputs.project-name }}" );
           EOT
+          for ext in ${{ inputs.extra-extensions }}; do
+            echo "wfLoadExtension( '$ext' );" >> LocalSettings.php
+          done
+          echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> LocalSettings.php
 
       - uses: actions/checkout@v6
         with:
           path: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
           fetch-depth: 0
+
+      - name: Download extra extensions
+        if: inputs.extra-extensions != ''
+        run: |
+          for ext in ${{ inputs.extra-extensions }}; do
+            echo "Downloading $ext..."
+            wget "https://github.com/wikimedia/mediawiki-extensions-${ext}/archive/refs/heads/${{ matrix.entry.mw }}.tar.gz" -nv -O "${ext}.tar.gz"
+            rm -rf "extensions/${ext}"
+            tar -zxf "${ext}.tar.gz"
+            mv "mediawiki-extensions-${ext}-${{ matrix.entry.mw }}" "extensions/${ext}"
+            rm "${ext}.tar.gz"
+          done
 
       - name: Install dependencies
         run: composer update --no-ansi --no-interaction --no-progress
