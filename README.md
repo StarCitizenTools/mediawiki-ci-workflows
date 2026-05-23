@@ -115,6 +115,7 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 | `project-type` | string | *required* | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
+| `extra-extensions` | string | `""` | Space-separated extra extensions to download and load (e.g. `Scribunto`) |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
@@ -171,6 +172,7 @@ Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `
 | `project-type` | string | *required* | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
+| `extra-extensions` | string | `""` | Space-separated extra extensions to download and load (e.g. `Scribunto`) |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
