@@ -23,6 +23,10 @@ on:
         description: "Space-separated list of extra extensions to download for type resolution (e.g. 'Scribunto')"
         type: string
         default: ""
+      extra-composer-packages:
+        description: "Space-separated Composer packages to require into MediaWiki for type resolution (e.g. 'mediawiki/semantic-media-wiki' for extensions not on the wikimedia mirror)"
+        type: string
+        default: ""
       skip-cache:
         description: "Skip MW cache (set true for nightly runs)"
         type: boolean
@@ -75,6 +79,14 @@ jobs:
 
       - name: Install MediaWiki dependencies
         run: composer install --no-ansi --no-interaction --no-progress
+
+      - name: Require extra composer packages
+        if: inputs.extra-composer-packages != ''
+        # For dependency extensions distributed via Composer rather than the
+        # wikimedia mirror (e.g. Semantic MediaWiki). They install into
+        # extensions/ via composer/installers, so Phan can resolve their symbols
+        # once the project's .phan config adds the directory.
+        run: composer require --no-ansi --no-interaction --no-progress ${{ inputs.extra-composer-packages }}
 
       - uses: actions/checkout@v6
         with:
