@@ -1,1 +1,4 @@
 docs/plans/
+
+# Compiled binary from `go build` in the repo root
+/update-foreign-resources

@@ -231,6 +231,57 @@ sonarqube:
     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
+---
+
+### `update-foreign-resources.yml` — Foreign resources updates
+
+Checks npm for newer versions of the packages pinned in your project's [`foreign-resources.yaml`](https://www.mediawiki.org/wiki/Foreign_resources), regenerates the bundled files with MediaWiki's `manageForeignResources` maintenance script, and opens a pull request with the result — a scheduled Dependabot-style bot for foreign resources, which Dependabot itself cannot track.
+
+Only components whose `src` points at `registry.npmjs.org` are updated; others are skipped with a notice. Comments and formatting in the yaml are preserved.
+
+| Input | Type | Default | Description |
+|-------|------|---------|-------------|
+| `project-type` | string | `extension` | `skin` or `extension` |
+| `project-name` | string | *required* | Directory name (e.g. `FloatingUI`, `AGGrid`) |
+| `foreign-resources-dir` | string | `modules/lib` | Directory containing `foreign-resources.yaml`, relative to the project root |
+| `mw-branch` | string | `REL1_46` | MediaWiki branch used to run `manageForeignResources` |
+| `php-version` | string | `8.4` | PHP version |
+| `pr-branch` | string | `update-foreign-resources` | Head branch for the update pull request |
+| `pr-title` | string | `build(deps): update foreign resources` | Pull request title, also used as the commit message |
+| `skip-cache` | boolean | `false` | Skip MW cache (set `true` to refresh the cached MediaWiki install) |
+| `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
+
+Notes:
+
+- Trigger it from the caller on `schedule` and `workflow_dispatch` — it is not meant to run on pushes or pull requests.
+- The caller job must grant `contents: write` and `pull-requests: write` permissions.
+- With the default `GITHUB_TOKEN`, the repository setting **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General) must be enabled, and the created PR will not trigger `pull_request` CI workflows. Pass a `PR_TOKEN` secret (a PAT or GitHub App token) to lift both limitations.
+- If your project cuts releases from conventional commits (e.g. release-please), override `pr-title` with a release-triggering type such as `fix(deps): update foreign resources`.
+- Reference this workflow `@main`. The bump script is checked out from this repository's default branch at run time, so pinning the caller to a tag or SHA would still run the latest script — pinning gives no version isolation here.
+
+```yaml
+name: Update foreign resources
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  update:
+    uses: StarCitizenTools/mediawiki-ci-workflows/.github/workflows/update-foreign-resources.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      project-type: extension
+      project-name: FloatingUI
+    # Empty until the org defines PR_TOKEN; the workflow then falls back
+    # to GITHUB_TOKEN.
+    secrets:
+      PR_TOKEN: ${{ secrets.PR_TOKEN }}
+```
+
 ## Full example
 
 A complete caller workflow with change detection, conditional jobs, and nightly cache refresh:
@@ -362,6 +413,7 @@ jobs:
 | What | Cache key | Shared across | Refreshed by |
 |------|-----------|---------------|--------------|
 | MediaWiki installation | `mw-<branch>-php<version>` | `test-php`, `test-parser`, and `analyze-php` | `skip-cache: true` (nightly) |
+| MediaWiki installation (foreign resources) | `mw-<branch>-php<version>-foreign-resources-<project>` | `update-foreign-resources` | `skip-cache: true` |
 | Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
@@ -375,4 +427,4 @@ mise install
 mise run setup
 ```
 
-This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https://github.com/google/yamlfmt), and [lefthook](https://github.com/evilmartians/lefthook), then configures lefthook to run them automatically before each commit.
+This installs [actionlint](https://github.com/rhysd/actionlint), [yamlfmt](https://github.com/google/yamlfmt), [lefthook](https://github.com/evilmartians/lefthook), and [Go](https://go.dev/) (for the `scripts/` tooling, checked with `gofmt` and `go vet`), then configures lefthook to run the checks automatically before each commit.

@@ -1,0 +1,138 @@
+name: 🔄 Update Foreign Resources
+
+on:
+  workflow_call:
+    inputs:
+      project-type:
+        description: "'skin' or 'extension'"
+        type: string
+        default: extension
+      project-name:
+        description: "e.g. FloatingUI, AGGrid"
+        type: string
+        required: true
+      foreign-resources-dir:
+        description: "Directory containing foreign-resources.yaml, relative to the project root"
+        type: string
+        default: modules/lib
+      mw-branch:
+        description: "MediaWiki branch used to run manageForeignResources"
+        type: string
+        default: REL1_46
+      php-version:
+        description: "PHP version"
+        type: string
+        default: "8.4"
+      pr-branch:
+        description: "Head branch for the update pull request"
+        type: string
+        default: update-foreign-resources
+      pr-title:
+        description: "Pull request title, also used as the commit message"
+        type: string
+        default: "build(deps): update foreign resources"
+      skip-cache:
+        description: "Skip MW cache (set true to refresh the cached MediaWiki install)"
+        type: boolean
+        default: false
+      runner:
+        description: "Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')"
+        type: string
+        default: ubuntu-latest
+    secrets:
+      PR_TOKEN:
+        description: >-
+          Token used to push the update branch and open the pull request. Falls back to GITHUB_TOKEN, in which case the pull request will not trigger `pull_request` CI workflows.
+        required: false
+
+jobs:
+  update:
+    name: Update foreign resources
+    timeout-minutes: 30
+    runs-on: ${{ inputs.runner }}
+
+    env:
+      PROJECT_PATH: mediawiki/${{ inputs.project-type == 'skin' && 'skins' || 'extensions' }}/${{ inputs.project-name }}
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Cache MediaWiki
+        if: ${{ !inputs.skip-cache }}
+        id: cache-mediawiki
+        uses: actions/cache@v5
+        with:
+          path: mediawiki
+          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-foreign-resources-${{ inputs.project-name }}
+
+      - name: Cache Composer cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache
+          key: composer-php${{ inputs.php-version }}
+
+      - name: Download MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        run: |
+          rm -rf mediawiki
+          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv
+          tar -zxf "${{ inputs.mw-branch }}.tar.gz"
+          rm "${{ inputs.mw-branch }}.tar.gz"
+          mv "mediawiki-${{ inputs.mw-branch }}" mediawiki
+          cd mediawiki
+          composer install --no-ansi --no-interaction --no-progress
+          php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
+
+      - name: Configure MediaWiki
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        run: |
+          LOAD_FN=${{ inputs.project-type == 'skin' && 'wfLoadSkin' || 'wfLoadExtension' }}
+          echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> mediawiki/LocalSettings.php
+
+      - name: Checkout project
+        uses: actions/checkout@v6
+        with:
+          path: ${{ env.PROJECT_PATH }}
+
+      - name: Checkout mediawiki-ci-workflows
+        uses: actions/checkout@v6
+        with:
+          repository: StarCitizenTools/mediawiki-ci-workflows
+          path: ci-workflows
+
+      - name: Check npm for newer versions
+        id: bump
+        run: |
+          go run ci-workflows/scripts/update-foreign-resources/main.go \
+            --summary-file pr-body.md \
+            "$PROJECT_PATH/${{ inputs.foreign-resources-dir }}/foreign-resources.yaml"
+
+      - name: Regenerate bundled files
+        if: steps.bump.outputs.changed == 'true'
+        working-directory: mediawiki
+        env:
+          # Without this, ForeignResourceManager caches downloads in the
+          # project's own <foreign-resources-dir>/.foreign/cache, and the
+          # create-pull-request step would commit the tarball blobs.
+          XDG_CACHE_HOME: ${{ runner.temp }}
+        run: |
+          TYPE_FLAG=${{ inputs.project-type == 'skin' && '--skin' || '--extension' }}
+          php maintenance/run.php manageForeignResources "$TYPE_FLAG" '${{ inputs.project-name }}' update
+          php maintenance/run.php manageForeignResources "$TYPE_FLAG" '${{ inputs.project-name }}' verify
+
+      - name: Create pull request
+        if: steps.bump.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.PR_TOKEN || github.token }}
+          path: ${{ env.PROJECT_PATH }}
+          branch: ${{ inputs.pr-branch }}
+          delete-branch: true
+          commit-message: ${{ inputs.pr-title }}
+          title: ${{ inputs.pr-title }}
+          body-path: pr-body.md

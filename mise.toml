@@ -2,6 +2,7 @@
 yamlfmt = "0.21.0"
 actionlint = "1.7.12"
 lefthook = "2.1.6"
+go = "1.23.2"
 
 [tasks.setup]
 description = "Enable the pre-commit hook"
