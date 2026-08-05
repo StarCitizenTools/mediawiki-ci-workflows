@@ -13,8 +13,10 @@
 // written here. Known limitation: purl fields (used only by core's make-cdx
 // SBOM action, not by update/verify) are not rewritten.
 //
-// Outputs changed=true|false to $GITHUB_OUTPUT when set, and an optional
-// markdown summary (--summary-file) suitable for a pull request body.
+// Outputs changed=true|false to $GITHUB_OUTPUT when set — plus, when
+// something changed, a Dependabot-style title fragment naming the bumped
+// packages and versions — and an optional markdown summary (--summary-file)
+// suitable for a pull request body.
 package main
 
 import (
@@ -143,6 +145,21 @@ func fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
+// titleFragment builds a Dependabot-style PR title fragment (without the
+// conventional-commit prefix) from the applied updates.
+func titleFragment(updates []update) string {
+	switch len(updates) {
+	case 1:
+		u := updates[0]
+		return fmt.Sprintf("bump %s from %s to %s", u.pkg, u.old, u.new)
+	case 2:
+		return fmt.Sprintf("bump %s to %s and %s to %s",
+			updates[0].pkg, updates[0].new, updates[1].pkg, updates[1].new)
+	default:
+		return fmt.Sprintf("bump %d foreign resources", len(updates))
+	}
+}
+
 func writeSummary(path string, updates []update) {
 	var b strings.Builder
 	b.WriteString("Updates the following foreign resources to their latest npm release:\n\n")
@@ -244,5 +261,8 @@ func main() {
 		}
 		defer f.Close()
 		fmt.Fprintf(f, "changed=%t\n", len(updates) > 0)
+		if len(updates) > 0 {
+			fmt.Fprintf(f, "title=%s\n", titleFragment(updates))
+		}
 	}
 }

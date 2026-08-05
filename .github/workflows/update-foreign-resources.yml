@@ -27,10 +27,10 @@ on:
         description: "Head branch for the update pull request"
         type: string
         default: update-foreign-resources
-      pr-title:
-        description: "Pull request title, also used as the commit message"
+      pr-title-prefix:
+        description: "Conventional-commit prefix for the PR title and commit message; the rest is generated from the bumped packages"
         type: string
-        default: "build(deps): update foreign resources"
+        default: "build(deps)"
       skip-cache:
         description: "Skip MW cache (set true to refresh the cached MediaWiki install)"
         type: boolean
@@ -133,6 +133,6 @@ jobs:
           path: ${{ env.PROJECT_PATH }}
           branch: ${{ inputs.pr-branch }}
           delete-branch: true
-          commit-message: ${{ inputs.pr-title }}
-          title: ${{ inputs.pr-title }}
+          commit-message: "${{ inputs.pr-title-prefix }}: ${{ steps.bump.outputs.title }}"
+          title: "${{ inputs.pr-title-prefix }}: ${{ steps.bump.outputs.title }}"
           body-path: pr-body.md
