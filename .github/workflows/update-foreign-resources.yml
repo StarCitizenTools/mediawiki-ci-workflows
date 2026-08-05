@@ -15,6 +15,10 @@ on:
         description: "Directory containing foreign-resources.yaml, relative to the project root"
         type: string
         default: modules/lib
+      extra-extensions:
+        description: "Space-separated list of extra extensions to download and load (e.g. 'Scribunto'), for projects whose extension.json requires them"
+        type: string
+        default: ""
       mw-branch:
         description: "MediaWiki branch used to run manageForeignResources"
         type: string
@@ -68,7 +72,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: mediawiki
-          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-foreign-resources-${{ inputs.project-name }}
+          # `extra-extensions` participates in the key so changing which
+          # extensions get loaded reliably invalidates LocalSettings.php and
+          # the cached extensions/ tree.
+          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-foreign-resources-${{ inputs.project-name }}-${{ inputs.extra-extensions }}
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -92,12 +99,28 @@ jobs:
         if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
         run: |
           LOAD_FN=${{ inputs.project-type == 'skin' && 'wfLoadSkin' || 'wfLoadExtension' }}
+          for ext in ${{ inputs.extra-extensions }}; do
+            echo "wfLoadExtension( '$ext' );" >> mediawiki/LocalSettings.php
+          done
           echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> mediawiki/LocalSettings.php
 
       - name: Checkout project
         uses: actions/checkout@v6
         with:
           path: ${{ env.PROJECT_PATH }}
+
+      - name: Download extra extensions
+        if: inputs.extra-extensions != ''
+        working-directory: mediawiki
+        run: |
+          for ext in ${{ inputs.extra-extensions }}; do
+            echo "Downloading $ext..."
+            wget "https://github.com/wikimedia/mediawiki-extensions-${ext}/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv -O "${ext}.tar.gz"
+            rm -rf "extensions/${ext}"
+            tar -zxf "${ext}.tar.gz"
+            mv "mediawiki-extensions-${ext}-${{ inputs.mw-branch }}" "extensions/${ext}"
+            rm "${ext}.tar.gz"
+          done
 
       - name: Checkout mediawiki-ci-workflows
         uses: actions/checkout@v6
