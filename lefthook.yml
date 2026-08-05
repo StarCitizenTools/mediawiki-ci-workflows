@@ -7,3 +7,9 @@ pre-commit:
     - name: yamlfmt
       run: yamlfmt -lint .
 
+    - name: gofmt
+      run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+    - name: go-vet
+      run: go vet ./...
+
