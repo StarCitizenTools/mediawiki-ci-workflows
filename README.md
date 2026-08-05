@@ -244,6 +244,7 @@ Only components whose `src` points at `registry.npmjs.org` are updated; others a
 | `project-type` | string | `extension` | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `FloatingUI`, `AGGrid`) |
 | `foreign-resources-dir` | string | `modules/lib` | Directory containing `foreign-resources.yaml`, relative to the project root |
+| `extra-extensions` | string | `""` | Space-separated extra extensions to download and load (e.g. `Scribunto`), for projects whose `extension.json` requires them |
 | `mw-branch` | string | `REL1_46` | MediaWiki branch used to run `manageForeignResources` |
 | `php-version` | string | `8.4` | PHP version |
 | `pr-branch` | string | `update-foreign-resources` | Head branch for the update pull request |
