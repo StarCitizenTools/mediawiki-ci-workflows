@@ -13,11 +13,11 @@ on:
         required: true
       matrix:
         description: >
-          JSON array of matrix entries. Each entry: {"mw": "REL1_43", "php": "8.2", "experimental": false}.
+          JSON array of matrix entries. Each entry: {"mw": "REL1_43", "php": "8.3", "experimental": false}.
         type: string
         default: >
           [
-            {"mw": "REL1_43", "php": "8.2", "experimental": false},
+            {"mw": "REL1_43", "php": "8.3", "experimental": false},
             {"mw": "REL1_44", "php": "8.3", "experimental": false},
             {"mw": "REL1_45", "php": "8.4", "experimental": false},
             {"mw": "REL1_46", "php": "8.5", "experimental": false},

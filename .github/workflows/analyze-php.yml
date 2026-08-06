@@ -18,7 +18,7 @@ on:
       php-version:
         description: "PHP version for Phan analysis"
         type: string
-        default: "8.2"
+        default: "8.3"
       extra-extensions:
         description: "Space-separated list of extra extensions to download for type resolution (e.g. 'Scribunto')"
         type: string
