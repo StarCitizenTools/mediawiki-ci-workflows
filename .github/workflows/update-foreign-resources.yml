@@ -104,6 +104,17 @@ jobs:
           done
           echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> mediawiki/LocalSettings.php
 
+      - name: Discard cached project checkout
+        # The MediaWiki cache covers `mediawiki/`, which contains the project
+        # checkout, so a restored cache hands actions/checkout a stale .git.
+        # That includes remote-tracking refs for an earlier update branch that
+        # has since been merged and deleted, and `--prune` on the checkout
+        # fetch only covers its own refspec (origin/main). create-pull-request
+        # then derives its `--force-with-lease` from the surviving stale ref
+        # and the push fails with "stale info". Always start from a fresh
+        # clone so no git metadata survives across runs.
+        run: rm -rf "$PROJECT_PATH"
+
       - name: Checkout project
         uses: actions/checkout@v6
         with:
