@@ -249,12 +249,12 @@ Only components whose `src` points at `registry.npmjs.org` are updated; others a
 | `php-version` | string | `8.4` | PHP version |
 | `pr-branch` | string | `update-foreign-resources` | Head branch for the update pull request |
 | `pr-title-prefix` | string | `build(deps)` | Conventional-commit prefix for the PR title and commit message; the rest is generated from the bumped packages (e.g. `build(deps): bump @floating-ui/dom from 1.7.6 to 1.8.0`) |
-| `skip-cache` | boolean | `false` | Skip MW cache (set `true` to refresh the cached MediaWiki install) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 Notes:
 
 - Trigger it from the caller on `schedule` and `workflow_dispatch` — it is not meant to run on pushes or pull requests.
+- Unlike the test workflows, this one does not cache the MediaWiki install, so it takes no `skip-cache` input. The project is checked out inside `mediawiki/`, so caching that tree would also cache the project's `.git` and carry git state between runs. Reinstalling costs about 35s, which is not worth optimising on a weekly job.
 - The caller job must grant `contents: write` and `pull-requests: write` permissions.
 - With the default `GITHUB_TOKEN`, the repository setting **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General) must be enabled, and the created PR will not trigger `pull_request` CI workflows. Pass a `PR_TOKEN` secret (a PAT or GitHub App token) to lift both limitations.
 - If your project cuts releases from conventional commits (e.g. release-please), override `pr-title-prefix` with a release-triggering type such as `fix(deps)`.
@@ -414,7 +414,6 @@ jobs:
 | What | Cache key | Shared across | Refreshed by |
 |------|-----------|---------------|--------------|
 | MediaWiki installation | `mw-<branch>-php<version>` | `test-php`, `test-parser`, and `analyze-php` | `skip-cache: true` (nightly) |
-| MediaWiki installation (foreign resources) | `mw-<branch>-php<version>-foreign-resources-<project>` | `update-foreign-resources` | `skip-cache: true` |
 | Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |

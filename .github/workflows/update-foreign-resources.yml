@@ -35,10 +35,6 @@ on:
         description: "Conventional-commit prefix for the PR title and commit message; the rest is generated from the bumped packages"
         type: string
         default: "build(deps)"
-      skip-cache:
-        description: "Skip MW cache (set true to refresh the cached MediaWiki install)"
-        type: boolean
-        default: false
       runner:
         description: "Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')"
         type: string
@@ -66,17 +62,14 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - name: Cache MediaWiki
-        if: ${{ !inputs.skip-cache }}
-        id: cache-mediawiki
-        uses: actions/cache@v5
-        with:
-          path: mediawiki
-          # `extra-extensions` participates in the key so changing which
-          # extensions get loaded reliably invalidates LocalSettings.php and
-          # the cached extensions/ tree.
-          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-foreign-resources-${{ inputs.project-name }}-${{ inputs.extra-extensions }}
-
+      # The MediaWiki install is deliberately not cached. A cache over
+      # `mediawiki/` would also cover the project checkout underneath it, so it
+      # carried the project's .git — including the remote-tracking ref for an
+      # update branch that later got merged and deleted, which broke
+      # create-pull-request's `--force-with-lease` push with "stale info". The
+      # install only costs ~35s on a job that runs weekly, so reinstalling every
+      # run is cheaper than keeping state that can go stale. The Composer cache
+      # below lives outside the tree and is unaffected.
       - name: Cache Composer cache
         uses: actions/cache@v5
         with:
@@ -84,7 +77,6 @@ jobs:
           key: composer-php${{ inputs.php-version }}
 
       - name: Download MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
         run: |
           rm -rf mediawiki
           wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv
@@ -96,24 +88,12 @@ jobs:
           php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
 
       - name: Configure MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
         run: |
           LOAD_FN=${{ inputs.project-type == 'skin' && 'wfLoadSkin' || 'wfLoadExtension' }}
           for ext in ${{ inputs.extra-extensions }}; do
             echo "wfLoadExtension( '$ext' );" >> mediawiki/LocalSettings.php
           done
           echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> mediawiki/LocalSettings.php
-
-      - name: Discard cached project checkout
-        # The MediaWiki cache covers `mediawiki/`, which contains the project
-        # checkout, so a restored cache hands actions/checkout a stale .git.
-        # That includes remote-tracking refs for an earlier update branch that
-        # has since been merged and deleted, and `--prune` on the checkout
-        # fetch only covers its own refspec (origin/main). create-pull-request
-        # then derives its `--force-with-lease` from the surviving stale ref
-        # and the push fails with "stale info". Always start from a fresh
-        # clone so no git metadata survives across runs.
-        run: rm -rf "$PROJECT_PATH"
 
       - name: Checkout project
         uses: actions/checkout@v6
