@@ -43,7 +43,7 @@ Not every project needs all of these — only include the workflows and inputs r
 
 ### `lint.yml` — Linting
 
-Runs PHP, JS, style, i18n, and markdown linters. Enable only the ones you need.
+Runs PHP, JS, style, i18n, markdown and type-check linters. Enable only the ones you need.
 
 | Input | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -52,6 +52,7 @@ Runs PHP, JS, style, i18n, and markdown linters. Enable only the ones you need.
 | `lint-styles` | boolean | `false` | Run `npm run lint:styles` |
 | `lint-i18n` | boolean | `false` | Run `npm run lint:i18n` |
 | `lint-md` | boolean | `false` | Run `npm run lint:md` |
+| `lint-types` | boolean | `false` | Run `npm run lint:types` |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 ```yaml
@@ -63,6 +64,7 @@ lint:
     lint-styles: true
     lint-i18n: true
     lint-md: true
+    lint-types: true
 ```
 
 ---
