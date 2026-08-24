@@ -23,6 +23,10 @@ on:
         description: Run markdown linting (npm run lint:md)
         type: boolean
         default: false
+      lint-types:
+        description: Run JSDoc/TypeScript type checking (npm run lint:types)
+        type: boolean
+        default: false
       runner:
         description: Runner image (e.g. 'ubuntu-latest', 'ubuntu-24.04-arm')
         type: string
@@ -37,7 +41,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Setup Node
-        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md
+        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md || inputs.lint-types
         uses: actions/setup-node@v6
         with:
           cache: npm
@@ -49,7 +53,7 @@ jobs:
           composer install --prefer-dist --no-progress
 
       - name: Install Node dependencies
-        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md
+        if: inputs.lint-js || inputs.lint-styles || inputs.lint-i18n || inputs.lint-md || inputs.lint-types
         run: npm ci
 
       - name: Lint PHP
@@ -71,3 +75,7 @@ jobs:
       - name: Lint markdown
         if: inputs.lint-md
         run: npm run lint:md
+
+      - name: Check types
+        if: inputs.lint-types
+        run: npm run lint:types
