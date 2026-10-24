@@ -88,12 +88,13 @@ jobs:
         working-directory: ~
         run: |
           rm -rf mediawiki
-          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ matrix.entry.mw }}.tar.gz" -nv
-          tar -zxf "${{ matrix.entry.mw }}.tar.gz"
-          mv "mediawiki-${{ matrix.entry.mw }}" mediawiki
+          # Clone rather than download the GitHub source tarball: MW's
+          # .gitattributes `export-ignore`s the PHPUnit config template
+          # (`phpunit.xml.dist`, renamed `phpunit.xml.template` in REL1_46),
+          # so the tarball lacks it. Drop `.git` so it isn't cached.
+          git clone --depth 1 --branch "${{ matrix.entry.mw }}" https://github.com/wikimedia/mediawiki.git mediawiki
+          rm -rf mediawiki/.git
           cd mediawiki
-          wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" -nv || \
-            wget "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template" -nv
           composer install --no-ansi --no-interaction --no-progress
           php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
 
