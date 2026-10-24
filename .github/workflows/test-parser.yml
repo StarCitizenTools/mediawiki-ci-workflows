@@ -28,7 +28,7 @@ on:
         type: string
         default: ""
       skip-cache:
-        description: "Skip MW cache (set true for nightly runs)"
+        description: "Install MW from scratch instead of restoring the cache, then save it (set true for nightly runs)"
         type: boolean
         default: false
       runner:
@@ -59,25 +59,23 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
-      - name: Get cache date
-        if: ${{ !inputs.skip-cache }}
-        id: cache-date
+      - name: Compute MediaWiki cache key
+        id: cache-key
         working-directory: ~
-        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+        # `extra-extensions` participates in the key so changing which
+        # extensions get loaded reliably invalidates LocalSettings.php. The
+        # UTC date refreshes the tree daily: actions/cache never overwrites
+        # an existing key, so without it the tree would stay at whichever
+        # commit the branch was on when it was first cached.
+        run: echo "key=mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache MediaWiki
+      - name: Restore MediaWiki cache
         if: ${{ !inputs.skip-cache }}
         id: cache-mediawiki
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           path: mediawiki
-          # `extra-extensions` participates in the key so changing which
-          # extensions get loaded reliably invalidates LocalSettings.php and
-          # the cached extensions/ tree. The UTC date refreshes the tree
-          # daily: actions/cache never overwrites an existing key, so without
-          # it the tree would stay at whichever commit the branch was on when
-          # it was first cached.
-          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-${{ steps.cache-date.outputs.date }}
+          key: ${{ steps.cache-key.outputs.key }}
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -114,6 +112,19 @@ jobs:
             echo "wfLoadExtension( '$ext' );" >> LocalSettings.php
           done
           echo "$LOAD_FN( '${{ inputs.project-name }}' );" >> LocalSettings.php
+
+      - name: Save MediaWiki cache
+        if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
+        # Save right after the install, before the project and extra
+        # extensions are added, so the cache holds only MediaWiki and its
+        # freshly installed database. `skip-cache` runs skip the restore but
+        # still save, so a nightly run early in the UTC day builds that day's
+        # cache. If the key already exists, the save is skipped with a log
+        # message rather than an error.
+        uses: actions/cache/save@v5
+        with:
+          path: mediawiki
+          key: ${{ steps.cache-key.outputs.key }}
 
       - uses: actions/checkout@v6
         with:
