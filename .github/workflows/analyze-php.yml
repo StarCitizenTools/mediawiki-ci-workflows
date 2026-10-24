@@ -60,7 +60,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: mediawiki
-          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-${{ inputs.project-name }}
+          # Bump the version suffix when the download/install logic below
+          # changes, so existing caches don't keep a stale MediaWiki tree
+          # alive.
+          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-${{ inputs.project-name }}-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -73,9 +76,14 @@ jobs:
         working-directory: ~
         run: |
           rm -rf mediawiki
-          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ inputs.mw-branch }}.tar.gz" -nv
-          tar -zxf "${{ inputs.mw-branch }}.tar.gz"
-          mv "mediawiki-${{ inputs.mw-branch }}" mediawiki
+          # Clone rather than download the GitHub source tarball: MW's
+          # .gitattributes has `.* export-ignore`, so the tarball lacks
+          # `.phan/stubs/`, which mediawiki-phan-config loads from core.
+          # Without `DomImpl.php`, Phan treats Parsoid's DOM classes as
+          # distinct from PHP's and reports type mismatches it wouldn't
+          # report against a git checkout. Drop `.git` so it isn't cached.
+          git clone --depth 1 --branch "${{ inputs.mw-branch }}" https://github.com/wikimedia/mediawiki.git mediawiki
+          rm -rf mediawiki/.git
 
       - name: Install MediaWiki dependencies
         run: composer install --no-ansi --no-interaction --no-progress
