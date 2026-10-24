@@ -80,7 +80,7 @@ Downloads a MediaWiki branch, installs your project into it, and runs `composer 
 | `mw-branch` | string | `REL1_43` | MediaWiki branch |
 | `php-version` | string | `8.2` | PHP version |
 | `extra-extensions` | string | `""` | Space-separated extra extensions for type resolution (e.g. `Scribunto`) |
-| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `skip-cache` | boolean | `false` | Install MW from scratch instead of restoring the cache, then save it (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 ```yaml
@@ -118,7 +118,7 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
 | `extra-extensions` | string | `""` | Space-separated extra extensions to download and load (e.g. `Scribunto`) |
-| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `skip-cache` | boolean | `false` | Install MW from scratch instead of restoring the cache, then save it (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 **Default matrix:**
@@ -175,7 +175,7 @@ Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `matrix` | string | *(see below)* | JSON array of matrix entries |
 | `extra-extensions` | string | `""` | Space-separated extra extensions to download and load (e.g. `Scribunto`) |
-| `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
+| `skip-cache` | boolean | `false` | Install MW from scratch instead of restoring the cache, then save it (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
 
 **Default matrix:**
@@ -287,7 +287,7 @@ jobs:
 
 ## Full example
 
-A complete caller workflow with change detection, conditional jobs, and nightly runs against a fresh MediaWiki install:
+A complete caller workflow with change detection, conditional jobs, and a nightly run that rebuilds the MediaWiki cache:
 
 <details>
 <summary>Show full example</summary>
@@ -420,7 +420,7 @@ jobs:
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
 
-Runs with `skip-cache: true` neither restore nor save the MediaWiki cache, so a nightly run tests against a fresh install without refreshing the cache for later runs.
+The MediaWiki cache is saved right after MediaWiki is installed, before the project is checked out, so it holds only MediaWiki. The first run each UTC day saves it. Runs with `skip-cache: true` install from scratch instead of restoring it, but still save the result. A nightly run scheduled just after midnight UTC, like the one in the full example, is usually the day's first run, so it builds the cache that later runs restore. If another run saved that day's cache first, the nightly run's save is skipped.
 
 ## Development
 
