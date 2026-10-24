@@ -71,7 +71,7 @@ jobs:
           # alive. `extra-extensions` participates in the key so changing
           # which extensions get loaded reliably invalidates LocalSettings.php
           # and the cached extensions/ tree.
-          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-v3
+          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-v4
 
       - name: Cache Composer cache
         uses: actions/cache@v5
@@ -84,20 +84,13 @@ jobs:
         working-directory: ~
         run: |
           rm -rf mediawiki
-          wget "https://github.com/wikimedia/mediawiki/archive/refs/heads/${{ matrix.entry.mw }}.tar.gz" -nv
-          tar -zxf "${{ matrix.entry.mw }}.tar.gz"
-          mv "mediawiki-${{ matrix.entry.mw }}" mediawiki
+          # Clone rather than download the GitHub source tarball: MW's
+          # .gitattributes `export-ignore`s the PHPUnit config template
+          # (`phpunit.xml.dist`, renamed `phpunit.xml.template` in REL1_46),
+          # so the tarball lacks it. Drop `.git` so it isn't cached.
+          git clone --depth 1 --branch "${{ matrix.entry.mw }}" https://github.com/wikimedia/mediawiki.git mediawiki
+          rm -rf mediawiki/.git
           cd mediawiki
-          # `phpunit.xml.dist` is `export-ignore`d in MW's .gitattributes, so
-          # the GitHub source tarball doesn't include it — fetch it
-          # separately. MW master renamed the file to `phpunit.xml.template`,
-          # and the MW-side PHPUnit machinery looks for whichever name that
-          # branch actually ships (REL1_43 reads `.dist`; master's
-          # `tests/phpunit/generatePHPUnitConfig.php` reads `.template`).
-          # Leave wget to save under the URL's basename so the file lands
-          # under the name MW core expects on that branch.
-          wget -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.dist" || \
-            wget -nv "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.entry.mw }}/phpunit.xml.template"
           composer install --no-ansi --no-interaction --no-progress
           php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --pass AdminPassword WikiName AdminUser
 
