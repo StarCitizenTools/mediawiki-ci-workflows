@@ -416,7 +416,6 @@ jobs:
 | What | Cache key | Shared across | Refreshed by |
 |------|-----------|---------------|--------------|
 | MediaWiki installation | `mw-<branch>-php<version>-<project>-…-<date>` | Runs of the same workflow and matrix entry on the same UTC day | Daily (the key includes the UTC date) |
-| Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
 

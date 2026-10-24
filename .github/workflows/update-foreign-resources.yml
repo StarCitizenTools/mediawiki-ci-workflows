@@ -68,14 +68,7 @@ jobs:
       # update branch that later got merged and deleted, which broke
       # create-pull-request's `--force-with-lease` push with "stale info". The
       # install only costs ~35s on a job that runs weekly, so reinstalling every
-      # run is cheaper than keeping state that can go stale. The Composer cache
-      # below lives outside the tree and is unaffected.
-      - name: Cache Composer cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.composer/cache
-          key: composer-php${{ inputs.php-version }}
-
+      # run is cheaper than keeping state that can go stale.
       - name: Download MediaWiki
         run: |
           rm -rf mediawiki

@@ -72,12 +72,6 @@ jobs:
           path: mediawiki
           key: ${{ steps.cache-key.outputs.key }}
 
-      - name: Cache Composer cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.composer/cache
-          key: composer-php${{ inputs.php-version }}
-
       - name: Download MediaWiki
         if: steps.cache-mediawiki.outputs.cache-hit != 'true' || inputs.skip-cache
         working-directory: ~
