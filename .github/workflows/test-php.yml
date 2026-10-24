@@ -28,7 +28,7 @@ on:
         type: string
         default: ""
       skip-cache:
-        description: "Skip MW cache (set true for nightly runs to refresh cache)"
+        description: "Skip MW cache (set true for nightly runs)"
         type: boolean
         default: false
       runner:
@@ -60,6 +60,12 @@ jobs:
           extensions: mbstring, intl
           tools: composer
 
+      - name: Get cache date
+        if: ${{ !inputs.skip-cache }}
+        id: cache-date
+        working-directory: ~
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
       - name: Cache MediaWiki
         if: ${{ !inputs.skip-cache }}
         id: cache-mediawiki
@@ -70,8 +76,11 @@ jobs:
           # changes, so existing caches don't keep a stale MediaWiki tree
           # alive. `extra-extensions` participates in the key so changing
           # which extensions get loaded reliably invalidates LocalSettings.php
-          # and the cached extensions/ tree.
-          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-v4
+          # and the cached extensions/ tree. The UTC date refreshes the tree
+          # daily: actions/cache never overwrites an existing key, so without
+          # it the tree would stay at whichever commit the branch was on when
+          # it was first cached.
+          key: mw-${{ matrix.entry.mw }}-php${{ matrix.entry.php }}-${{ inputs.project-name }}-${{ inputs.extra-extensions }}-v4-${{ steps.cache-date.outputs.date }}
 
       - name: Cache Composer cache
         uses: actions/cache@v5

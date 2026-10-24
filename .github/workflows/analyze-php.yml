@@ -54,6 +54,12 @@ jobs:
           extensions: mbstring, intl, ast
           tools: composer
 
+      - name: Get cache date
+        if: ${{ !inputs.skip-cache }}
+        id: cache-date
+        working-directory: ~
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
       - name: Cache MediaWiki
         if: ${{ !inputs.skip-cache }}
         id: cache-mediawiki
@@ -62,8 +68,10 @@ jobs:
           path: mediawiki
           # Bump the version suffix when the download/install logic below
           # changes, so existing caches don't keep a stale MediaWiki tree
-          # alive.
-          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-${{ inputs.project-name }}-v2
+          # alive. The UTC date refreshes the tree daily: actions/cache never
+          # overwrites an existing key, so without it the tree would stay at
+          # whichever commit the branch was on when it was first cached.
+          key: mw-${{ inputs.mw-branch }}-php${{ inputs.php-version }}-${{ inputs.project-name }}-v2-${{ steps.cache-date.outputs.date }}
 
       - name: Cache Composer cache
         uses: actions/cache@v5

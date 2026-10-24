@@ -287,7 +287,7 @@ jobs:
 
 ## Full example
 
-A complete caller workflow with change detection, conditional jobs, and nightly cache refresh:
+A complete caller workflow with change detection, conditional jobs, and nightly runs against a fresh MediaWiki install:
 
 <details>
 <summary>Show full example</summary>
@@ -415,10 +415,12 @@ jobs:
 
 | What | Cache key | Shared across | Refreshed by |
 |------|-----------|---------------|--------------|
-| MediaWiki installation | `mw-<branch>-php<version>` | `test-php`, `test-parser`, and `analyze-php` | `skip-cache: true` (nightly) |
+| MediaWiki installation | `mw-<branch>-php<version>-<project>-…-<date>` | Runs of the same workflow and matrix entry on the same UTC day | Daily (the key includes the UTC date) |
 | Composer packages | `composer-php<version>` | All MW branches | Automatic (Composer) |
 | JS coverage | `coverage-js-<branch>` | SonarQube runs | Each `test-js` run |
 | PHP coverage | `coverage-php-<branch>` | SonarQube runs | Each `test-php` run |
+
+Runs with `skip-cache: true` neither restore nor save the MediaWiki cache, so a nightly run tests against a fresh install without refreshing the cache for later runs.
 
 ## Development
 
