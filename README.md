@@ -78,7 +78,7 @@ Downloads a MediaWiki branch, installs your project into it, and runs `composer 
 | `project-type` | string | *required* | `skin` or `extension` |
 | `project-name` | string | *required* | Directory name (e.g. `Citizen`, `TabberNeue`) |
 | `mw-branch` | string | `REL1_43` | MediaWiki branch |
-| `php-version` | string | `8.2` | PHP version |
+| `php-version` | string | `8.3` | PHP version |
 | `extra-extensions` | string | `""` | Space-separated extra extensions for type resolution (e.g. `Scribunto`) |
 | `skip-cache` | boolean | `false` | Skip MW cache (for nightly runs) |
 | `runner` | string | `ubuntu-latest` | Runner image (e.g. `ubuntu-24.04-arm` for ARM) |
@@ -125,10 +125,11 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 
 ```json
 [
-  {"mw": "REL1_43", "php": "8.2", "coverage": "xdebug", "experimental": false},
+  {"mw": "REL1_43", "php": "8.3", "coverage": "xdebug", "experimental": false},
   {"mw": "REL1_44", "php": "8.3", "coverage": "none",   "experimental": false},
   {"mw": "REL1_45", "php": "8.4", "coverage": "none",   "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "coverage": "none",   "experimental": false},
+  {"mw": "REL1_47", "php": "8.5", "coverage": "none",   "experimental": false},
   {"mw": "master",  "php": "8.5", "coverage": "none",   "experimental": true}
 ]
 ```
@@ -182,10 +183,11 @@ Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `
 
 ```json
 [
-  {"mw": "REL1_43", "php": "8.2", "experimental": false},
+  {"mw": "REL1_43", "php": "8.3", "experimental": false},
   {"mw": "REL1_44", "php": "8.3", "experimental": false},
   {"mw": "REL1_45", "php": "8.4", "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "experimental": false},
+  {"mw": "REL1_47", "php": "8.5", "experimental": false},
   {"mw": "master",  "php": "8.5", "experimental": true}
 ]
 ```
