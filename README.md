@@ -126,7 +126,6 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
 ```json
 [
   {"mw": "REL1_43", "php": "8.3", "coverage": "xdebug", "experimental": false},
-  {"mw": "REL1_44", "php": "8.3", "coverage": "none",   "experimental": false},
   {"mw": "REL1_45", "php": "8.4", "coverage": "none",   "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "coverage": "none",   "experimental": false},
   {"mw": "REL1_47", "php": "8.5", "coverage": "none",   "experimental": false},
@@ -160,7 +159,7 @@ test-php:
     matrix: >
       [
         {"mw": "REL1_43", "php": "8.2", "coverage": "xdebug", "experimental": false},
-        {"mw": "REL1_44", "php": "8.3", "coverage": "none",   "experimental": false}
+        {"mw": "REL1_46", "php": "8.5", "coverage": "none",   "experimental": false}
       ]
 ```
 
@@ -184,7 +183,6 @@ Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `
 ```json
 [
   {"mw": "REL1_43", "php": "8.3", "experimental": false},
-  {"mw": "REL1_44", "php": "8.3", "experimental": false},
   {"mw": "REL1_45", "php": "8.4", "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "experimental": false},
   {"mw": "REL1_47", "php": "8.5", "experimental": false},
