@@ -21,7 +21,7 @@ on:
             {"mw": "REL1_45", "php": "8.4", "experimental": false},
             {"mw": "REL1_46", "php": "8.5", "experimental": false},
             {"mw": "REL1_47", "php": "8.5", "experimental": false},
-            {"mw": "master", "php": "8.5", "experimental": true}
+            {"mw": "master", "php": "8.6", "experimental": true}
           ]
       extra-extensions:
         description: "Space-separated list of extra extensions to download and load (e.g. 'Scribunto')"
