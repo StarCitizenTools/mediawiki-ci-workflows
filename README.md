@@ -129,7 +129,7 @@ Runs PHPUnit across a matrix of MediaWiki branches and PHP versions.
   {"mw": "REL1_45", "php": "8.4", "coverage": "none",   "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "coverage": "none",   "experimental": false},
   {"mw": "REL1_47", "php": "8.5", "coverage": "none",   "experimental": false},
-  {"mw": "master",  "php": "8.5", "coverage": "none",   "experimental": true}
+  {"mw": "master",  "php": "8.6", "coverage": "none",   "experimental": true}
 ]
 ```
 
@@ -186,7 +186,7 @@ Runs MediaWiki's `parserTests.php` against every `.txt` file in your project's `
   {"mw": "REL1_45", "php": "8.4", "experimental": false},
   {"mw": "REL1_46", "php": "8.5", "experimental": false},
   {"mw": "REL1_47", "php": "8.5", "experimental": false},
-  {"mw": "master",  "php": "8.5", "experimental": true}
+  {"mw": "master",  "php": "8.6", "experimental": true}
 ]
 ```
 
